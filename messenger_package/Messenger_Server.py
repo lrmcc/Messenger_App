@@ -6,7 +6,7 @@ import threading
 import time
 import re
 
-class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
+class MessengerTCPRequestHandler(socketserver.BaseRequestHandler):
     def __init__(self, request, client_address, server):
         self.server = server
         socketserver.BaseRequestHandler.__init__(self, request, client_address, server)
@@ -14,28 +14,27 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         data = str(self.request.recv(1024),'ascii')
-        print(f"Server recieved: {data}")
-        connect_header = 'CONNECT::::'
-        disconnect_header = 'DISCONNECT::::'
-        if (re.match(connect_header, data)):
-            print("connecting...")
-            res = re.split(connect_header, data)
-            client_id = res[1]
-            print(f"client_id: {client_id}")
-            ThreadedTCPServer.register_client(self.server, client_id)
-        if (re.match(disconnect_header, data)):
-            print("disconnecting...")
-            res = re.split(disconnect_header, data)
-            client_id = res[1]
-            print(f"client_id: {client_id}")
-            ThreadedTCPServer.client_disconnect(self.server, client_id)
+        self.parse_data(data)
+        
         cur_thread = threading.current_thread()
         cur_thread_name = cur_thread.name
         response = bytes(f"{cur_thread_name}: {data}", 'ascii')
         self.request.sendall(response)
+
+    def parse_data(self, data):
+        message_header, message_payload = re.split("::::", data)
+        print(f"message_header: {message_header} message_payload: {message_payload}")
+        if (message_header == 'CONNECT'):
+            print("connecting...")
+            print(f"client_id: {message_payload}")
+            MessengerTCPServer.register_client(self.server, message_payload)
+        if (message_header == 'DISCONNECT'):
+            print("disconnecting...")
+            print(f"client_id: {message_payload}")
+            MessengerTCPServer.disconnect_client(self.server, message_payload)
     
-class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-    def __init__(self, client_address, request_handler=ThreadedTCPRequestHandler):
+class MessengerTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    def __init__(self, client_address, request_handler=MessengerTCPRequestHandler):
         self.SERVER_STATUS = True
         self.CLIENTS_UPDATE = False
         self.CLIENTS = {}
@@ -51,16 +50,12 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     @staticmethod
     def register_client(server, client_id):
         if (client_id not in server.CLIENTS):
-            print(f"client_id: {client_id} not in self.clients")
             server.CLIENTS_UPDATE = True
             server.CLIENTS[client_id] = 1
-        print("after add in register_client, self.clients is:")
         print(server.CLIENTS)
     
     @staticmethod
-    def client_disconnect(server, client_id):
-        print("before del in register_client, self.clients is:")
+    def disconnect_client(server, client_id):
         print(server.CLIENTS)
         del server.CLIENTS[client_id]
-        print(f"del self.clients[client_id: {client_id}]")
         server.CLIENTS_UPDATE = True

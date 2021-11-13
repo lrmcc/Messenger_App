@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
 
-import sys
+import getpass
 import socket
-from messenger_package.TCPServer import *
-from messenger_package.TCPClient import *
+import sys
+import time
+
+from messenger_package.Messenger_Client import *
+from messenger_package.Messenger_Server import *
+
 
 def run(server):
     with server:
-        server_thread = ThreadedTCPServer.get_server_thread(server)
+        server_thread = MessengerTCPServer.get_server_thread(server)
         print("Server loop running in thread: ", server_thread.name)
         while(server.SERVER_STATUS):
-            time.sleep(1)
-            if(server.CLIENTS_UPDATE):
-                print(f"self.clients_update is {server.CLIENTS_UPDATE}!")
-                time_string = time.strftime("%m/%d/%Y, %H:%M:%S", time.localtime())
-                print(f"---------========server running at time: {time_string}========---------")
-                print(server.CLIENTS)
-                server.CLIENTS_UPDATE = False
+            pass
     server.shutdown()
     
 def main():
@@ -25,26 +23,46 @@ def main():
     ADDR = (HOST, PORT)
     if (len(sys.argv) == 3):
         try:
-            PORT = int(port)
-            self.PORT = PORT
+            PORT = int(sys.argv[2])
         except ValueError:
-            print("Second argument not a valid port number\n==> Default port is 5050")
+            print(port_message)
     if sys.argv[1] == 'server':
-        print("\n-----------------Welcome to TCP Socket-Server for the Data Translator-----------------")
+        print(server_message)
         print(f"Server host is: {HOST}\n at Port: {PORT}")
-        print("Press [CTRL-C] close server\n")
-        server = ThreadedTCPServer(ADDR, ThreadedTCPRequestHandler)
+        server = MessengerTCPServer(ADDR, MessengerTCPRequestHandler)
         run(server)
     elif sys.argv[1] == 'client':
-        print("\n-----------------Welcome to TCP Socket-Client for the Data Translator-----------------")
-        print(f"Connecting to host: {HOST}\n at port: {PORT}")
-        print("Enter text and press enter to send message, 'exit' to disconnect and close client\n")
-        client = TCPClient(HOST, PORT)
+        USER = getpass.getuser()
+        print(f"USER: {USER}")
+        print(client_message)
+        print(f"Client connecting to host: {HOST}\n at port: {PORT}")
+        client = MessengerClient(HOST, PORT, USER)
         client.run()
     else:
-        print("Run module with 'server' or 'client' as first argument for desired function")
-        print("Optional: user can select port number for server or client via second argument")
-        print("For example >: python main.py server 9999")
+        print(messenger_message)
+
+client_message = '''
+                    \n
+                    -------- Welcome to the Messenger Client --------
+                    Enter text and press enter to send message
+                    '--clients' to see all connected users
+                    '--exit' to disconnect and close client
+                    \n
+                    '''
+server_message = '''
+                    \n
+                    -------- Welcome to the Messenger Server --------
+                    Press [CTRL-C] close server
+                    \n    
+                    '''
+messenger_message = '''
+                    \n
+                    Run module with 'server' or 'client' as first argument for desired function
+                    Optional: user can select port number for server or client via second argument
+                    For example >: python main.py server 9999
+                    \n
+                    '''
+port_message = "Second argument not a valid port number\n==> Default port is 5050"
 
 if __name__ == '__main__':
     main()

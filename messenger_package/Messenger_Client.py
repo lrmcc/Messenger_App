@@ -4,11 +4,12 @@ import socket
 import random
 import time
 
-class TCPClient():
-    def __init__(self, HOST, PORT):
+class MessengerClient():
+    def __init__(self, HOST, PORT, USER):
         self.HOST = HOST
         self.PORT = PORT
-        self.MESSAGE_LOG = []
+        self.PORT = PORT
+        self.USER = USER
         self.set_client_id()
 
     def set_client_id(self):
@@ -31,7 +32,7 @@ class TCPClient():
         self.message = input(">: ")
     
     def add_message_header(self, header):
-        self.message = f"{header}:{self.message}"
+        self.message = f"{header}::::{self.message}"
 
     def send_message_with_socket(self):
         with self.get_socket() as sock:
@@ -44,8 +45,8 @@ class TCPClient():
         self.connect()
         while(self.client_run):
             self.get_user_message()
-            if self.message == 'exit': self.disconnect()
-            self.MESSAGE_LOG.append(self.message)
+            self.add_message_header(self.client_id)
+            if self.message == '--exit': self.disconnect()
             self.send_message_with_socket()
 
     def connect(self):
