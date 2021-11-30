@@ -7,109 +7,124 @@ import threading
 import getpass
 
 class MessengerClient():
-    def __init__(self, address, encoding):
+    def __init__(self, address):
         self.HOST, self.PORT = address
-        print(f"self.HOST: {self.HOST} self.PORT: {self.PORT}")
-        self.ENCODING = encoding
         self.USER = getpass.getuser()
-        self.CLIENT_ID = MessengerClient.get_client_id()
-        self.RECEIVE_THREAD = threading.Thread(target=self.receive_from_server)
-        self.USER_THREAD = threading.Thread(target=self.get_user_input)
+        self.CLIENT = MessengerClient.client_socket_setup(address)
+        self.USERNAME = input("Enter username: ")
+        self.message = ""
+        self.USER_THREAD = threading.Thread(target=self.get_user_input, args=(self.CLIENT, self.USERNAME, self.message))
+        self.RECEIVE_THREAD = threading.Thread(target=self.receive_from_server, args=(self.CLIENT, self.USERNAME))
+        self.direct_message_mode = False
 
     def start(self):
-        self.USERNAME = input("Enter username: ")
-        self.direct_message_mode = False
-        self.direct_message_target = ""
-        self.client_socket_setup()
-        if (self.client_run): self.thread_start()
-
-    def client_socket_setup(self):
         try:
-            self.CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.CLIENT.connect((self.HOST, self.PORT))
-            self.client_run = True
-        except:
-            print("Could not create client socket")
-            self.client_socket_shutdown()
-
-    def thread_start(self):
-        print("thread_start")
-        try:
-            self.RECEIVE_THREAD.start()
+            print("try thread.start()")
             self.USER_THREAD.start()
+            self.RECEIVE_THREAD.start()
         except:
             print("Could not start threads")
-            self.client_socket_shutdown()
+            MessengerClient.client_socket_shutdown(self.CLIENT)
 
-    def get_user_input(self):
-        while self.client_run:
-            if self.direct_message_mode:
-                self.direct_message()
-            else:
-                self.broadcast_message()
-
-    def receive_from_server(self):
-        while self.client_run:
+    def get_user_input(self, client, username, message):
+        print("get_user_input()")
+        while True:
             try:
-                self.recv_message = self.CLIENT.recv(1024).decode('ascii')
-                self.parse_recieve()
+                if self.direct_message_mode:
+                    print("get_user_input, while True: try: if self.direct_message_mode:")
+                    msg = MessengerClient.parse_input(client, input(f'\nTo {self.direct_target_name} >: '), False)
+                    print("if self.direct_message_mode: msg = MessengerClient.parse_input")
+                    message =(f"{self.direct_target_name}::::From {username}: {msg}")
+                    MessengerClient.send_to_server(client, message)
+                    print("get_user_input, if self.direct_message_mode: send_to_server")
+                else:
+                    print("get_user_input, while True: try: else:")
+                    user_input = input("")
+                    print(f"user_input = {user_input}")
+                    message = MessengerClient.parse_input(client, user_input, False)
+                    print(f"message = {message}")
+                    MessengerClient.send_to_server(client, message)
+                    print("get_user_input, try else: send_to_server")
             except:
                 break
 
-    def parse_input(self):
-        if self.message == "--exit":
-            self.send_to_server(self.message)
-            self.client_socket_shutdown()
-        if self.message == '--all' and self.direct_message_mode:
-            self.direct_message_manager(False, self.message[2:], self.recv_message[10:])
-            self.message = "private chat ended"
-    
-    def parse_recieve(self):
-        print(f"parse_recieve self.recv_message: {self.recv_message }")
-        if self.recv_message == 'INFO':
-            self.send_to_server(f"{self.CLIENT_ID}::::{self.USERNAME}")
-        elif self.recv_message.startswith('DIRECT'):
-            self.direct_message_manager(True, self.message[2:], self.recv_message[10:])
-        elif self.recv_message == 'REFUSE':
-            self.client_socket_shutdown()
-        elif self.recv_message == '':
-            self.client_socket_shutdown()
-        else:
-            print(self.recv_message)
-    
-    def broadcast_message(self):
-        self.message = input("\nTo all >:")
-        self.parse_input()
-        self.send_to_server(self.message)
+    def receive_from_server(self, client, username):
+        print("receive_from_server()")
+        while True:
+            try:
+                print("receive_from_server() while True: try:")
+                recv_message = client.recv(1024).decode('ascii')
+                print(f"recv_message: {recv_message}")
+                response = self.parse_recieve(client, username, recv_message)
+                print(f"receive_from_server(), response = {response}")
+                if len(response) > 0:
+                    MessengerClient.send_to_server(client, response)
+                    print(f"receive_from_server, send_to_server just sent: {response}")
+            except:
+                break
 
-    def direct_message(self):
-        self.message = input(f'\nTo {self.direct_message_name} >: ')
-        self.parse_input()
-        self.message =(f"{self.direct_message_target}::::From {self.USERNAME}: {self.message}")
-        self.send_to_server(self.message)
-        
     def direct_message_manager(self, status, name, target):
         self.direct_message_mode = status
-        self.direct_message_name = name
-        self.direct_message_target = target
-            
-    def client_socket_shutdown(self):
-        self.CLIENT.close()
-        self.client_run = False
+        self.direct_target_name = name
+        self.direct_target_client_id = target
+
+    
+    def parse_recieve(self, client, username, recv_message):
+        print(f"parse_recieve: {recv_message}")
+        if recv_message == 'INFO':
+            print(f"parse_recieve(), if recv_message == 'INFO':")
+            client_id = MessengerClient.get_client_id()
+            info = f"{client_id}::::{username}"
+            print(f"info: {info}")
+            return str(info)
+        elif recv_message.startswith('DIRECT'):
+            message = self.get_message()
+            MessengerClient.direct_message_manager(True, message[2:], recv_message[10:])
+            return ""
+        elif recv_message == 'REFUSE' or recv_message == '':
+            MessengerClient.client_socket_shutdown(client)
+        else:
+            return "" # recv_message
+
+    def get_message(self):
+        return self.message
+
+    @staticmethod
+    def parse_input(client, input_message, direct_message_mode):
+        print(f"parse_input {input_message}")
+        if input_message == "--exit":
+            MessengerClient.send_to_server(input_message)
+            MessengerClient.client_socket_shutdown(client)
+        elif input_message == '--all' and direct_message_mode:
+            MessengerClient.direct_message_manager(False, "", "")
+            return "private chat ended"
+        else:
+            return input_message
+
+    @staticmethod
+    def client_socket_setup(address):
+        host, port = address
+        try:
+            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client.connect((host, port))
+        except:
+            print("Could not create client socket")
+            MessengerClient.client_socket_shutdown(client)
+        return client
+    
+    @staticmethod
+    def client_socket_shutdown(client):
+        client.close()
         exit(0)
 
-    def send_to_server(self, message):
-        self.CLIENT.send(message.encode(self.ENCODING))
+    @staticmethod
+    def send_to_server(client, message):
+        print(f"about to send_to_server: {message}")
+        client.send(message.encode('ascii'))
+        print(f"send_to_server successfully sent: {message}")
         
     @staticmethod
     def get_client_id():
+        print("in get_client_id()")
         random.seed(time.time_ns())
         return hex(int(round(((random.random()) * 1000000000),0)))
-
-    @staticmethod
-    def toggle(toggle_target):
-        print("inside toggle")
-        if toggle_target:
-            return False
-        else:
-            return True

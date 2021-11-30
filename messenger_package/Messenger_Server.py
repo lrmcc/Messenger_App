@@ -7,24 +7,26 @@ import time
 import re
 
 class MessengerServer():
-    def __init__(self, address, encoding):
+    def __init__(self, address):
         self.HOST, self.PORT = address
-        self.ENCODING = encoding
         self.client_dict = {}
 
     def start(self):
         try:
-            self.server_setup()
+            self.server = MessengerServer.server_setup(self.HOST, self.PORT)
+            self.SERVER_STATUS = True
             self.server_run()
         except:
             print("Could not start server")
             exit(0)
 
-    def server_setup(self):
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind((self.HOST, self.PORT))
-        self.server.listen()
-        self.SERVER_STATUS = True
+    @staticmethod
+    def server_setup(host, port):
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind((host, port))
+        server.listen()
+        return server
+
 
     def server_run(self):
         with self.server:
@@ -44,9 +46,13 @@ class MessengerServer():
 
     def accept_client(self):
         client, address = self.server.accept()
+        print("self.server.accept()")
+        print(f"client: {client}")
+        print(f"address: {address}") 
         try:
             self.direct_message(client, 'INFO')
-            client_info = client.recv(1024).decode(self.ENCODING)
+            client_info = client.recv(1024).decode('ascii')
+            print(f"client_info: {client_info}")
             self.add_client(client, address, client_info)
         except ConnectionResetError:
             print("ConnectionResetError")
@@ -59,7 +65,8 @@ class MessengerServer():
         client_connected_flag = True
         while client_connected_flag:
             try:
-                recv_message = client.recv(1024).decode(self.ENCODING)
+                recv_message = client.recv(1024).decode('ascii')
+                print(f"recv_message: {recv_message}")
                 if recv_message.startswith('--'):
                     client_connected_flag = self.parse_command(client, recv_message[2:])
                 elif "::::" in recv_message:
@@ -77,22 +84,26 @@ class MessengerServer():
         return
                 
     def direct_message(self, client, message):
-        print("direct_message(self, client, message)")
+        print(f"direct_message {message}")
         try:
-           client.send(message.encode(self.ENCODING))
+           client.send(message.encode('ascii'))
         except ConnectionResetError:
             print("direct_message ConnectionResetError")
             pass
         
     def broadcast_message(self, message):
+        print(f"broadcast_message {message}")
         for key in self.client_dict:
             try:
-                key.send(message.encode(self.ENCODING))
+                key.send(message.encode('ascii'))
             except ConnectionResetError:
                 print("broadcast_message ConnectionResetError for particular client")
                 continue
     
     def add_client(self, client, address, client_info):
+        print("add_client()")
+        print(f"client: {client}")
+        print(f"address: {address}") 
         client_id, username = client_info.split("::::", 1)
         self.client_dict[client] = [client_id, username, address]
         self.broadcast_message(f'{username} joined the chat from {address}')
