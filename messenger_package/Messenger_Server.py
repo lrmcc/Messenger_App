@@ -1,63 +1,48 @@
 #!/usr/bin/env python3
 
-import socketserver
-import socket
 import threading
-import time
-import re
+
+from messenger_package.Messenger_Socket import *
+from messenger_package.Messenger_Functions import *
+
 
 class MessengerServer():
     def __init__(self, address):
-        self.HOST, self.PORT = address
+        self.ADDRESS = address
+        self.SOCKET = get_socket()
+        print("self.SOCKET = get_socket()")
         self.client_dict = {}
 
     def start(self):
         try:
-            self.server = MessengerServer.server_setup(self.HOST, self.PORT)
+            self.SOCKET.bind(self.ADDRESS)
+            self.SOCKET.listen()
             self.SERVER_STATUS = True
-            self.server_run()
+            with self.SOCKET:
+                while (self.SERVER_STATUS):
+                    try:
+                        self.accept_client()
+                    except:
+                        pass
+            server_shutdown(self.SOCKET, self.client_dict)
         except:
             print("Could not start server")
             exit(0)
 
-    @staticmethod
-    def server_setup(host, port):
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind((host, port))
-        server.listen()
-        return server
-
-
-    def server_run(self):
-        with self.server:
-            while (self.SERVER_STATUS):
-                try:
-                    self.accept_client()
-                except:
-                    pass
-        self.server_shutdown()
-
-    def server_shutdown(self):
-        self.broadcast_message("server_shutdown")
-        self.broadcast_message("REFUSE")
-        self.client_dict.clear()
-        self.SERVER_STATUS = False
-        self.server.shutdown()
-
     def accept_client(self):
-        client, address = self.server.accept()
-        print("self.server.accept()")
-        print(f"client: {client}")
-        print(f"address: {address}") 
+        client, address = self.SOCKET.accept()
+        print("client, address = self.SOCKET.accept()")
         try:
-            self.direct_message(client, 'INFO')
+            direct_message(client, 'INFO')
             client_info = client.recv(1024).decode('ascii')
-            print(f"client_info: {client_info}")
-            self.add_client(client, address, client_info)
+            client_id, username = client_info.split("::::", 1)
+            self.client_dict[client] = [client_id, username, address]
+            print(f"self.client_dict[client] = [{client_id}, {username}, {address}]")
+            msg = f'{username} joined the chat from {address}'
+            self.broadcast_message(self.client_dict, msg)
         except ConnectionResetError:
             print("ConnectionResetError")
             return
-        
         thread = threading.Thread(target=self.handle, args=(client,))
         thread.start()
 
@@ -68,87 +53,58 @@ class MessengerServer():
                 recv_message = client.recv(1024).decode('ascii')
                 print(f"recv_message: {recv_message}")
                 if recv_message.startswith('--'):
-                    client_connected_flag = self.parse_command(client, recv_message[2:])
+                    client_connected_flag = MessengerServer.parse_command(client, self.client_dict, recv_message[2:])
                 elif "::::" in recv_message:
                     target_client_id, message = recv_message.split("::::", 1)
-                    target_client = self.get_client_by_client_id(target_client_id)
-                    self.direct_message(target_client, message)
+                    target_client = get_key_by_dict_val_x(self.client_dict, target_client_id, 0)
+                    direct_message(target_client, message)
                 else:
                     message = f"{self.client_dict[client][1]}: {recv_message}"
-                    self.broadcast_message(message)
+                    self.broadcast_message(self.client_dict, message)
             except ConnectionResetError:
-                self.remove_client(client)
+                self.broadcast_message(self.client_dict, f"{self.client_dict[client][1]} left the chat!")
+                del self.client_dict[client]
                 break
         if (not self.SERVER_STATUS):
-            self.server.close()
+            self.client_dict.clear()
+            server_shutdown(self.SOCKET, self.client_dict)
+            self.SERVER_STATUS = False
+            quit()
         return
-                
-    def direct_message(self, client, message):
-        print(f"direct_message {message}")
-        try:
-           client.send(message.encode('ascii'))
-        except ConnectionResetError:
-            print("direct_message ConnectionResetError")
-            pass
-        
-    def broadcast_message(self, message):
-        print(f"broadcast_message {message}")
-        for key in self.client_dict:
-            try:
-                key.send(message.encode('ascii'))
-            except ConnectionResetError:
-                print("broadcast_message ConnectionResetError for particular client")
-                continue
-    
-    def add_client(self, client, address, client_info):
-        print("add_client()")
-        print(f"client: {client}")
-        print(f"address: {address}") 
-        client_id, username = client_info.split("::::", 1)
-        self.client_dict[client] = [client_id, username, address]
-        self.broadcast_message(f'{username} joined the chat from {address}')
-   
-    def remove_client(self, client):
-        self.broadcast_message(f"{self.client_dict[client][1]} left the chat!")
-        del self.client_dict[client]
-    
-    def get_client_by_client_id(self, client_id):
-        for key, value in self.client_dict.items():
-            if value[0] == client_id:
-                return key
-        return None
-    
-    def get_client_id_by_username(self, username):
-        for key, value in self.client_dict.items():
-            if value[1] == username:
-                return value[0]
-        return None
-    
-    def get_usernames_list(self):
-        client_list = []
-        for val in list(self.client_dict.values()):
-            client_list.append(val[1])
-        return client_list
-    
-    def get_all_usernames_str(self):
-        ret_string = ', '.join(str(val) for val in self.get_usernames_list())
-        return f"Connected users: {ret_string}"
 
-    def parse_command(self, client, command):
+    #@staticmethod
+    def parse_command(self, client, client_dict, command):
+        print("def parse_command(client, client_dict, command):")
         if command == "users":
-            self.direct_message(client, self.get_all_usernames_str())
-        elif command in self.get_usernames_list():
-            target_client_id = self.get_client_id_by_username(command)
+            direct_message(client, get_str_all_val_x(client_dict, 1))
+        elif command == "all":
+            direct_message(client, get_str_all_val_x(client_dict, 1))
+        elif command in get_list_of_dict_idx_x(client_dict, 1):
+            target_client_id = get_dict_value_x_by_value_y(client_dict, command, 0, 1)
             if target_client_id == None:
-                self.direct_message(client, f"Direct message target user unavailable")
+                direct_message(client, f"Direct message target user unavailable")
             else:
-                self.direct_message(client, f"DIRECT::::{target_client_id}")
+                direct_message(client, f"DIRECT::::{target_client_id}")
         elif command == "exit":
-            self.remove_client(client)
+            self.broadcast_message(client_dict, f"{client_dict[client][1]} left the chat!")
+            del client_dict[client]
             return False
         elif command == "shutdown":
-            self.server_shutdown()
+            server_shutdown(client, client_dict)
             return False
         else:
-            self.direct_message(client, f"{command} is an invalid command")
+            direct_message(client, f"{command} is an invalid command")
         return True
+
+    def broadcast_message(self, client_dict, message):
+        print(f"broadcast_message(client_dict, message) where message: {message}")
+        # takes in a dictionary where each key is a socket connection
+        for key in client_dict:
+            print(f"key: {key}")
+            try:
+                print("BEFORE key.send(message.encode('ascii'))")
+                key.send(message.encode('ascii'))
+                print("AFTER key.send(message.encode('ascii'))")
+            except ConnectionResetError:
+                print("broadcast_message ConnectionResetError")
+                continue

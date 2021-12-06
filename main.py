@@ -4,11 +4,11 @@ import sys
 import socket
 from messenger_package.Messenger_Server import *
 from messenger_package.Messenger_Client import *
+from messenger_package.Messenger_Functions import *
 
 def main():
     HOST = socket.gethostbyname(socket.gethostname())
     PORT = 5050
-    ENCODING = 'ascii'
     arg_len = len(sys.argv)
     if (arg_len < 2):
         print(program_info)
@@ -20,27 +20,24 @@ def main():
             print(f"\n{sys.argv[2]} {invalid_port}")
             return
     ADDR = (HOST, PORT)
-    get_time()
+
+    print(f"\n{sys.argv[1]}, host at IP address {HOST} on port {PORT} at time {get_time()}.\n")
+
     if sys.argv[1] == 'server':
-        print(f"\nServer host is {HOST} at port {PORT} on {get_time()}\n{server_info}")
         try:
-            server = MessengerServer(ADDR, ENCODING)
+            server = MessengerServer(ADDR)
             server.start()
         except: 
             print("Couldn't start server")
     elif sys.argv[1] == 'client':
-        print(f"\nConnecting to host {HOST} at port {PORT} on {get_time()}\n{client_info}")
         try:
-            client = MessengerClient(ADDR, ENCODING)
+            client = MessengerClient(ADDR)
             client.start()
         except:
             print("Couldn't start client")
     else:
         print(program_info)
     return
-
-def get_time():
-    return time.strftime("%m/%d/%Y at %H:%M:%S", time.localtime())
 
 program_info = '''
             Run module with 'server' or 'client' as first argument for desired function
@@ -63,7 +60,6 @@ client_info ='''
             (ex. --file C:/Users/johndoe/Desktop --willsmith)
         '--save' to output message log to text file (TODO)
         '--exit' to disconnect from server and close client
-        '--shutdown' Admin remove clients and shutdown server
             '''
 
 server_info = '''
