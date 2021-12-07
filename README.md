@@ -1,14 +1,13 @@
 # Messenger_App
 A messenger app for users to send messages and files directly to individuals or to a group. The application is built with TCP sockets using Python Standard Library modules. 
 
-This application server is configured based on whether it is hosted locally or as web application. The closed network could launch a server instance to allow clients to connect within the network. A web hosting platform of some kind must be selected and configured in order to launch a web-based server instance to allow clients to connect from the internet. 
+The application's server configuration is determined by on whether it is hosted locally or as web application. A closed network could launch a server instance to allow clients to connect within the network. Alternatively, a web hosting platform of some kind could be selected and configured in order to launch a web-based server instance to allow clients to connect from the internet. 
 
 ## Developer Objective
 To provide a usable and customizable messaging application built in the Python language. 
 
 ## Purpose
 Users can communicate with one another over a messaging application 
-
 
 ## Prerequisites	
 Messenger_App will require Python version 3+ be installed. 

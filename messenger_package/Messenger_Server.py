@@ -10,7 +10,6 @@ class MessengerServer():
     def __init__(self, address):
         self.ADDRESS = address
         self.SOCKET = get_socket()
-        print("self.SOCKET = get_socket()")
         self.client_dict = {}
 
     def start(self):
@@ -31,15 +30,13 @@ class MessengerServer():
 
     def accept_client(self):
         client, address = self.SOCKET.accept()
-        print("client, address = self.SOCKET.accept()")
         try:
             direct_message(client, 'INFO')
             client_info = client.recv(1024).decode('ascii')
             client_id, username = client_info.split("::::", 1)
             self.client_dict[client] = [client_id, username, address]
-            print(f"self.client_dict[client] = [{client_id}, {username}, {address}]")
             msg = f'{username} joined the chat from {address}'
-            self.broadcast_message(self.client_dict, msg)
+            broadcast_message(self.client_dict, msg)
         except ConnectionResetError:
             print("ConnectionResetError")
             return
@@ -51,18 +48,20 @@ class MessengerServer():
         while client_connected_flag:
             try:
                 recv_message = client.recv(1024).decode('ascii')
-                print(f"recv_message: {recv_message}")
                 if recv_message.startswith('--'):
-                    client_connected_flag = MessengerServer.parse_command(client, self.client_dict, recv_message[2:])
+                    client_connected_flag = MessengerServer.parse_command(
+                        client, self.client_dict, recv_message[2:])
                 elif "::::" in recv_message:
                     target_client_id, message = recv_message.split("::::", 1)
-                    target_client = get_key_by_dict_val_x(self.client_dict, target_client_id, 0)
+                    target_client = get_key_by_dict_val_x(
+                        self.client_dict, target_client_id, 0)
                     direct_message(target_client, message)
                 else:
                     message = f"{self.client_dict[client][1]}: {recv_message}"
-                    self.broadcast_message(self.client_dict, message)
+                    broadcast_message(self.client_dict, message)
             except ConnectionResetError:
-                self.broadcast_message(self.client_dict, f"{self.client_dict[client][1]} left the chat!")
+                broadcast_message(
+                    self.client_dict, f"{self.client_dict[client][1]} left the chat!")
                 del self.client_dict[client]
                 break
         if (not self.SERVER_STATUS):
@@ -72,21 +71,23 @@ class MessengerServer():
             quit()
         return
 
-    #@staticmethod
-    def parse_command(self, client, client_dict, command):
-        print("def parse_command(client, client_dict, command):")
+    @staticmethod
+    def parse_command(client, client_dict, command):
         if command == "users":
             direct_message(client, get_str_all_val_x(client_dict, 1))
         elif command == "all":
             direct_message(client, get_str_all_val_x(client_dict, 1))
         elif command in get_list_of_dict_idx_x(client_dict, 1):
-            target_client_id = get_dict_value_x_by_value_y(client_dict, command, 0, 1)
+            target_client_id = get_dict_value_x_by_value_y(
+                client_dict, command, 0, 1)
             if target_client_id == None:
-                direct_message(client, f"Direct message target user unavailable")
+                direct_message(
+                    client, f"Direct message target user unavailable")
             else:
                 direct_message(client, f"DIRECT::::{target_client_id}")
         elif command == "exit":
-            self.broadcast_message(client_dict, f"{client_dict[client][1]} left the chat!")
+            broadcast_message(
+                client_dict, f"{client_dict[client][1]} left the chat!")
             del client_dict[client]
             return False
         elif command == "shutdown":
@@ -95,16 +96,3 @@ class MessengerServer():
         else:
             direct_message(client, f"{command} is an invalid command")
         return True
-
-    def broadcast_message(self, client_dict, message):
-        print(f"broadcast_message(client_dict, message) where message: {message}")
-        # takes in a dictionary where each key is a socket connection
-        for key in client_dict:
-            print(f"key: {key}")
-            try:
-                print("BEFORE key.send(message.encode('ascii'))")
-                key.send(message.encode('ascii'))
-                print("AFTER key.send(message.encode('ascii'))")
-            except ConnectionResetError:
-                print("broadcast_message ConnectionResetError")
-                continue
