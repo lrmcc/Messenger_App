@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import threading
 
 from messenger_package.Messenger_Socket import *
@@ -7,29 +5,27 @@ from messenger_package.Messenger_Functions import *
 
 
 class MessengerServer():
-    def __init__(self, address):
-        self.ADDRESS = address
-        self.SOCKET = get_socket()
+    def __init__(self):
         self.client_dict = {}
 
-    def start(self):
+    def start(self, address, sock):
         try:
-            self.SOCKET.bind(self.ADDRESS)
-            self.SOCKET.listen()
+            sock.bind(address)
+            sock.listen()
             self.SERVER_STATUS = True
-            with self.SOCKET:
+            with sock:
                 while (self.SERVER_STATUS):
                     try:
-                        self.accept_client()
+                        self.accept_client(sock)
                     except:
                         pass
-            server_shutdown(self.SOCKET, self.client_dict)
+            server_shutdown(sock, self.client_dict)
         except:
             print("Could not start server")
             exit(0)
 
-    def accept_client(self):
-        client, address = self.SOCKET.accept()
+    def accept_client(self, sock):
+        client, address = sock.accept()
         try:
             direct_message(client, 'INFO')
             client_info = client.recv(1024).decode('ascii')
@@ -40,10 +36,10 @@ class MessengerServer():
         except ConnectionResetError:
             print("ConnectionResetError")
             return
-        thread = threading.Thread(target=self.handle, args=(client,))
-        thread.start()
+        handle_thread = threading.Thread(target=self.handle, args=(client, sock,))
+        handle_thread.start()
 
-    def handle(self, client):
+    def handle(self, client, sock):
         client_connected_flag = True
         while client_connected_flag:
             try:
@@ -66,7 +62,7 @@ class MessengerServer():
                 break
         if (not self.SERVER_STATUS):
             self.client_dict.clear()
-            server_shutdown(self.SOCKET, self.client_dict)
+            server_shutdown(sock, self.client_dict)
             self.SERVER_STATUS = False
             quit()
         return

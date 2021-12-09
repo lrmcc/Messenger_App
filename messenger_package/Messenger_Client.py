@@ -1,43 +1,35 @@
-#!/usr/bin/env python3
-
 import threading
-import getpass
 
 from messenger_package.Messenger_Socket import *
 from messenger_package.Messenger_Functions import *
 
 
 class MessengerClient():
-    def __init__(self, address):
-        self.ADDRESS = address
-        self.USER = getpass.getuser()
-        self.SOCKET = get_socket()
-        self.USER_ID = hex(get_random_n_digit_int(9))
+    def __init__(self):
         self.message_header = ""
         self.last_message_sent = ""
 
-    def start(self):
+    def start(self, addr, sock, username, user_id):
         try:
-            self.USERNAME = input("Enter username: ")
-            self.USER_THREAD = threading.Thread(
-                target=self.get_user_input, args=(self.SOCKET, self.USERNAME))
-            self.RECEIVE_THREAD = threading.Thread(
-                target=self.receive_from_server, args=(self.SOCKET, self.USERNAME))
-            self.SOCKET.connect(self.ADDRESS)
-            connect_message = self.SOCKET.recv(1024).decode('ascii')
+            user_thread = threading.Thread(
+                target=self.get_user_input, args=(sock,))
+            recieve_thread = threading.Thread(
+                target=self.receive_from_server, args=(sock,))
+            sock.connect(addr)
+            connect_message = sock.recv(1024).decode('ascii')
             if connect_message == 'INFO':
-                info = f"{self.USER_ID}::::{self.USERNAME}"
-                self.SOCKET.send(info.encode('ascii'))
-                self.RECEIVE_THREAD.start()
-                self.USER_THREAD.start()
+                info = f"{user_id}::::{username}"
+                sock.send(info.encode('ascii'))
+                recieve_thread.start()
+                user_thread.start()
             else:
                 print("Server has not accepted connection")
         except:
             print("Could not start messenger client")
-            self.SOCKET.close()
+            sock.close()
             quit()
 
-    def get_user_input(self, client, username):
+    def get_user_input(self, client):
         while True:
             try:
                 user_input = input("")
@@ -49,7 +41,7 @@ class MessengerClient():
             except:
                 break
 
-    def receive_from_server(self, client, username):
+    def receive_from_server(self, client):
         while True:
             try:
                 recv_message = client.recv(1024).decode('ascii')

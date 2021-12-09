@@ -2,6 +2,7 @@
 
 import sys
 import socket
+
 from messenger_package.Messenger_Server import *
 from messenger_package.Messenger_Client import *
 from messenger_package.Messenger_Functions import *
@@ -9,6 +10,8 @@ from messenger_package.Messenger_Functions import *
 def main():
     HOST = socket.gethostbyname(socket.gethostname())
     PORT = 5050
+    SOCK = get_socket()
+    
     arg_len = len(sys.argv)
     if (arg_len < 2):
         print(program_info)
@@ -25,14 +28,16 @@ def main():
 
     if sys.argv[1] == 'server':
         try:
-            server = MessengerServer(ADDR)
-            server.start()
+            server = MessengerServer()
+            server.start(ADDR, SOCK)
         except: 
             print("Couldn't start server")
     elif sys.argv[1] == 'client':
         try:
-            client = MessengerClient(ADDR)
-            client.start()
+            client = MessengerClient()
+            username = input("Enter username: ")
+            user_id = hex(get_random_n_digit_int(9))
+            client.start(ADDR, SOCK, username, user_id)
         except:
             print("Couldn't start client")
     else:
