@@ -13,30 +13,31 @@ def get_time():
 
 
 def get_str_all_val_x(dict, x):
+    # takes a dictionary where each key has an array for value
+    # returns list of all values at index x
     ret_string = ', '.join(str(val) for val in get_list_of_dict_idx_x(dict, x))
     return f"Connected users: {ret_string}"
 
 
-def get_key_by_dict_val_x(dict, client_id, x):
-    # get_client_by_client_id(self, client_id)
+def get_key_by_dict_val_x(dict, val, x):
+    # takes dictionary and a val, returns key for matching value at index x
     for key, value in dict.items():
-        if value[x] == client_id:
+        if value[x] == val:
             return key
     return None
 
 
 def get_list_of_dict_idx_x(dict, x):
-    # takes dict (like self.client_dict) returns values (like username) list
+    # takes dictionary returns list of all values at index x
     x_list = []
     for val in list(dict.values()):
         x_list.append(val[x])
     return x_list
 
 
-def get_dict_value_x_by_value_y(dict, user_value, x, y):
-    #  example: get client_id by username
-    #   get_dict_value_x_by_value_y(self.client_dict, username, 0, 1)
+def get_dict_value_x_by_value_y(dict, val, x, y):
+    # takes dictionary and a val, when value at index y matches val, returns value at index x 
     for key, value in dict.items():
-        if value[y] == user_value:
+        if value[y] == val:
             return value[x]
     return None
