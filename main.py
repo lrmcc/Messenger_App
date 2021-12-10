@@ -2,6 +2,7 @@
 
 import sys
 import socket
+from Messenger_GUI import MessengerGUI
 
 from messenger_package.Messenger_Server import *
 from messenger_package.Messenger_Client import *
@@ -34,6 +35,15 @@ def main():
             print("Couldn't start server")
     elif sys.argv[1] == 'client':
         try:
+            username = input("Enter username: ")
+            user_id = hex(get_random_n_digit_int(9))
+            client = MessengerClient()
+            client.start(ADDR, SOCK, username, user_id)
+        except:
+            print("Couldn't start client")
+    elif sys.argv[1] == 'gui':
+        try:
+            gui = MessengerGUI()
             username = input("Enter username: ")
             user_id = hex(get_random_n_digit_int(9))
             client = MessengerClient()

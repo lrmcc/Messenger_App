@@ -40,6 +40,7 @@ Messenger_App will require Python version 3+ be installed.
 
 ## Future Functionality 
 - User can launch client in a browser application.
+- Usernames and associated data are logged in a json file. This file reflects the state of an instance of server
 - User accounts holds user information and dictates what data is retained.
 - User data is retained per user requirements set at account creation and can be changed at any time.
 - User can block any other user from communicating or seeing connection status.
