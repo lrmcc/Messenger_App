@@ -2,10 +2,11 @@
 
 import sys
 import socket
-from Messenger_GUI import MessengerGUI
+
 
 from messenger_package.Messenger_Server import *
 from messenger_package.Messenger_Client import *
+# from Messenger_GUI import MessengerGUI
 from messenger_package.Messenger_Functions import *
 
 def main():
