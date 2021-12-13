@@ -6,7 +6,7 @@ import socket
 
 from messenger_package.Messenger_Server import *
 from messenger_package.Messenger_Client import *
-# from Messenger_GUI import MessengerGUI
+from messenger_package.Messenger_GUI import *
 from messenger_package.Messenger_Functions import *
 
 def main():
@@ -45,10 +45,9 @@ def main():
     elif sys.argv[1] == 'gui':
         try:
             gui = MessengerGUI()
-            username = input("Enter username: ")
-            user_id = hex(get_random_n_digit_int(9))
-            client = MessengerClient()
-            client.start(ADDR, SOCK, username, user_id)
+            WINDOW = tk.Tk()
+            gui.start(ADDR, SOCK, WINDOW)
+            WINDOW.mainloop()
         except:
             print("Couldn't start client")
     else:
