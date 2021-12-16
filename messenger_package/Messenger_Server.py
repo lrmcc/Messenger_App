@@ -15,13 +15,10 @@ class MessengerServer():
             self.SERVER_STATUS = True
             with sock:
                 while (self.SERVER_STATUS):
-                    try:
-                        self.accept_client(sock)
-                    except:
-                        pass
+                    self.accept_client(sock)
             server_shutdown(sock, self.client_dict)
         except:
-            print("Could not start server")
+            print("Messenger_Server.py: Could not start server")
             exit(0)
 
     def accept_client(self, sock):

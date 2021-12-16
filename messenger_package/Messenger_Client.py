@@ -6,18 +6,29 @@ from messenger_package.Messenger_Functions import *
 
 class MessengerClient():
     def __init__(self):
+        print("client init!")
         self.message_header = ""
         self.last_message_sent = ""
 
     def start(self, addr, sock, username, user_id):
+        print()
         try:
+            print("client start!")
+            
             user_thread = threading.Thread(
                 target=self.get_user_input, args=(sock,))
+            print("user_thread")
+            
             recieve_thread = threading.Thread(
                 target=self.receive_from_server, args=(sock,))
+            print("recieve_thread")
+            
             sock.connect(addr)
+            print("sock.connect(addr)")
+            
             connect_message = sock.recv(1024).decode('ascii')
             if connect_message == 'INFO':
+                print("if connect_message == INFO:")
                 info = f"{user_id}::::{username}"
                 sock.send(info.encode('ascii'))
                 recieve_thread.start()
@@ -25,7 +36,7 @@ class MessengerClient():
             else:
                 print("Server has not accepted connection")
         except:
-            print("Could not start messenger client")
+            print("Messenger_Client.py: Could not start messenger client")
             sock.close()
             quit()
 
@@ -51,8 +62,9 @@ class MessengerClient():
                 if recv_message != response:
                     self.message_header = response
             except:
-                print("An exception occurred")
-                pass
+                print("An exception occurred during message recieve")
+                client.close()
+                quit()
 
     @staticmethod
     def parse_recieve(client, recv_message, last_message_sent):

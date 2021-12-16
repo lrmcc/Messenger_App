@@ -23,6 +23,14 @@ class MessengerGUI():
         self.USERNAME = ""
         self.CLIENT = MessengerClient()
         self.chat = ""
+        self.button = False
+    
+    def get_username(self):
+        while self.USERNAME == "":
+            pass
+        return self.USERNAME 
+    
+
     
     def set_geometry(self, WINDOW, width, height):
         w =  width
@@ -33,6 +41,8 @@ class MessengerGUI():
     
      
     def start(self, ADDR, SOCK, WINDOW):
+        print("Messenger_GUI.py: start(self, ADDR, SOCK, WINDOW):")
+        
         w = 300
         h = 200
         
@@ -59,9 +69,10 @@ class MessengerGUI():
         )
         
         def handle_click(event):
+            print(f"def handle_click(event), where event: {event}")
             if self.USERNAME == "":
                 self.USERNAME = self.ent_text_input.get()
-                self.CLIENT.start(ADDR, SOCK, self.USERNAME, hex(get_random_n_digit_int(9)))
+                print(f"self.USERNAME == {self.USERNAME}")
                 self.ent_text_input.delete(0, tk.END)
                 self.lbl_text_display.config(bg="gray")
                 self.lbl_text_display["text"] = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
@@ -69,7 +80,9 @@ class MessengerGUI():
                 self.frm_main.pack_forget()
                 self.frm_main.pack(padx=50, pady=50)
                 self.set_geometry(WINDOW, w*2, h*4)
+                self.CLIENT.start(ADDR, SOCK, self.USERNAME, hex(get_random_n_digit_int(9)))
             else:
+                print("General chat submit")
                 usr_input = self.ent_text_input.get()
                 textr = self.lbl_text_display.cget("text") + usr_input
                 self.ent_text_input.delete(0, tk.END)
@@ -93,7 +106,7 @@ class MessengerGUI():
         self.set_geometry(WINDOW, w, h)
         
         self.btn_submit.bind("<Button-1>", handle_click)
-
+        print("Messenger_GUI.py: bottom of start")
 if __name__ == '__main__':
     gui = MessengerGUI()
     

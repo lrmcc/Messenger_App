@@ -14,4 +14,3 @@ def broadcast(client_dict, message):
                 key.send(message.encode('ascii'))
             except ConnectionResetError:
                 print("broadcast_message ConnectionResetError")
-                continue

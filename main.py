@@ -33,7 +33,7 @@ def main():
             server = MessengerServer()
             server.start(ADDR, SOCK)
         except: 
-            print("Couldn't start server")
+            print("main.py: Could not start server")
     elif sys.argv[1] == 'client':
         try:
             username = input("Enter username: ")
@@ -41,15 +41,21 @@ def main():
             client = MessengerClient()
             client.start(ADDR, SOCK, username, user_id)
         except:
-            print("Couldn't start client")
+            print("main.py: Could not start client")
     elif sys.argv[1] == 'gui':
         try:
+
             gui = MessengerGUI()
             WINDOW = tk.Tk()
             gui.start(ADDR, SOCK, WINDOW)
-            WINDOW.mainloop()
+            gui.set_client()
+            print("Window.after")
+            #WINDOW.after(2000, client.start(ADDR, SOCK, gui.get_username(), user_id))
+            print("Window.mainloop")
+            mainloop_thread = threading.Thread(target=WINDOW.mainloop())
+            mainloop_thread.start()
         except:
-            print("Couldn't start client")
+            print("main.py: Couldn't start GUI client")
     else:
         print(program_info)
     return
