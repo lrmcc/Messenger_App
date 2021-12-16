@@ -25,13 +25,6 @@ class MessengerGUI():
         self.chat = ""
         self.button = False
     
-    def get_username(self):
-        while self.USERNAME == "":
-            pass
-        return self.USERNAME 
-    
-
-    
     def set_geometry(self, WINDOW, width, height):
         w =  width
         h = height

@@ -48,7 +48,6 @@ def main():
             gui = MessengerGUI()
             WINDOW = tk.Tk()
             gui.start(ADDR, SOCK, WINDOW)
-            gui.set_client()
             print("Window.after")
             #WINDOW.after(2000, client.start(ADDR, SOCK, gui.get_username(), user_id))
             print("Window.mainloop")
